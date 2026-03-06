@@ -1,4 +1,4 @@
-# 🚀 SpaceX Data Explorer
+# APLICACION PARA ANALISIS DE DATOS
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red.svg)
