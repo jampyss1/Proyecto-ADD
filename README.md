@@ -1,74 +1,301 @@
-# APLICACION PARA ANALISIS DE DATOS
+# Aplicación para Análisis de Datos en Python
 
 ![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)
-![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red.svg)
+![CLI](https://img.shields.io/badge/Interface-Console-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-Aplicación web interactiva diseñada para consumir, analizar y visualizar datos históricos de lanzamientos espaciales de **SpaceX**. Este proyecto cubre el flujo completo de trabajo de un análisis de ciencia de datos, empleando **Programación Orientada a Objetos (POO)** como paradigma de desarrollo.
+Aplicación desarrollada en **Python** para la **carga, procesamiento, análisis y visualización de datos** utilizando una arquitectura modular basada en **Programación Orientada a Objetos (POO)**.
 
-##  Objetivo del Proyecto
+El sistema implementa un **pipeline de análisis de datos** que permite cargar datasets, realizar análisis exploratorio, aplicar transformaciones, entrenar modelos y evaluar resultados.
 
-Diseñar e implementar una aplicación en Python que modele las principales etapas de un pipeline de ciencia de datos:
-1. **Carga** y gestión de datos.
-2. **Análisis Exploratorio (EDA)**.
-3. **Preprocesamiento**.
-4. **Modelado** (Machine Learning/Estadística).
-5. **Evaluación** de resultados.
-6. **Visualización** interactiva.
+Toda la interacción con el sistema se realiza **desde consola**, permitiendo ejecutar el flujo completo de análisis de manera estructurada.
 
-##  Stack
+---
 
-| Categoría | Herramienta | Justificación |
-| :--- | :--- | :--- |
-| **Lenguaje** | Python 3.11+ | Ecosistema de ciencia de datos |
-| **Interfaz** | Streamlit | Dashboard web profesional 100% Python |
-| **Visualización** | Plotly | Gráficas interactivas (zoom, hover, filtros) |
-| **Fuente de Datos** | SpaceX API v4 | Datos reales, gratuitos y sin autenticación |
-| **ML/Estadística** | scikit-learn, pandas | Análisis, preprocesamiento y modelado |
-| **Documentación** | Sphinx + autodoc | Estándar de la industria (NumPy/SciPy) |
-| **Control de Versiones** | GitHub | Historial, ramas y trazabilidad |
+# Objetivo del Proyecto
 
-##  Arquitectura del Sistema
+El objetivo del proyecto es implementar una aplicación que modele las principales etapas de un **pipeline de análisis de datos**, utilizando una arquitectura modular y orientada a objetos.
 
-El sistema sigue una **arquitectura de 4 capas** para garantizar bajo acoplamiento y alta cohesión:
+El flujo del sistema incluye:
 
-*   **Capa 4 (Presentación):** `app.py` - Dashboard Streamlit que coordina la interacción con el usuario.
-*   **Capa 3 (Lógica):** Módulos de análisis, preprocesamiento, modelado, evaluación y visualización.
-*   **Capa 2 (Dominio):** Clases `Lanzamiento` y `Cohete` que representan las entidades del negocio.
-*   **Capa 1 (Datos):** `CargadorDatos` que consume la API externa.
+1. Carga de datos  
+2. Análisis Exploratorio de Datos (EDA)  
+3. Preprocesamiento  
+4. Modelado  
+5. Evaluación  
+6. Visualización de resultados  
 
-### Clases Principales (POO)
+Este enfoque permite separar responsabilidades entre módulos y facilitar el mantenimiento del sistema.
 
-El sistema está compuesto por 9 clases organizadas bajo el principio de responsabilidad única (SRP):
+---
 
-| Clase | Responsabilidad |
-| :--- | :--- |
-| `Lanzamiento` | Representa un lanzamiento individual con sus atributos. |
-| `Cohete` | Representa un cohete con características técnicas y económicas. |
-| `CargadorDatos` | Consume la API, deserializa JSON y construye objetos. |
-| `AnalizadorExploratorio` | Genera estadísticas descriptivas y detecta valores nulos. |
-| `Preprocesador` | Filtra, limpia, normaliza fechas y convierte tipos de datos. |
-| `Modelador` | Implementa regresión lineal y detecta tendencias temporales. |
-| `Evaluador` | Calcula métricas (R², RMSE) y valida predicciones. |
-| `Visualizador` | Genera gráficas Plotly para el dashboard. |
-| `Aplicacion` | Orquestador principal del pipeline. |
+# Tecnologías Utilizadas
 
-## Estructura del Repositorio
+| Categoría | Herramienta |
+|-----------|-------------|
+| Lenguaje | Python 3.11+ |
+| Procesamiento de datos | Pandas |
+| Cálculo numérico | NumPy |
+| Machine Learning | Scikit-learn |
+| Visualización | Matplotlib / Plotly |
+| Control de versiones | Git + GitHub |
 
+---
 
-```text
-spacex_data_explorer/
-├── src/
-│   ├── __init__.py
-│   ├── modelos.py            # Clases de Dominio
-│   ├── carga_datos.py        # Etapa 1: Carga
-│   ├── analisis_eda.py       # Etapa 2: EDA
-│   ├── preprocesamiento.py   # Etapa 3: Preprocesamiento
-│   ├── modelado.py           # Etapa 4: Modelado
-│   ├── evaluacion.py         # Etapa 5: Evaluación
-│   ├── visualizacion.py      # Etapa 6: Visualización
-│   └── app.py                # Orquestador (Streamlit)
-├── tests/
+# Arquitectura del Sistema
+
+La aplicación está organizada en **módulos especializados**, coordinados por la clase principal `Aplicacion`.
+
+## Pipeline de análisis
+
+```
+Carga de datos
+      ↓
+Análisis Exploratorio (EDA)
+      ↓
+Preprocesamiento
+      ↓
+Modelado
+      ↓
+Evaluación
+      ↓
+Visualización
+```
+
+Cada componente del sistema se encarga de una etapa específica del flujo.
+
+---
+
+# Diagrama UML
+
+El diseño del sistema se basa en un **diagrama UML de clases**, donde se definen las responsabilidades de cada componente y las relaciones entre ellos.
+
+Las principales relaciones utilizadas son:
+
+- **Composición:** la clase `Aplicacion` contiene los componentes del sistema.
+- **Dependencia (usa):** algunos módulos utilizan funcionalidades de otros.
+
+Componentes principales:
+
+- `Aplicacion`
+- `CargadorDatos`
+- `AnalizadorExploratorio`
+- `Preprocesador`
+- `Modelador`
+- `Evaluador`
+- `Visualizador`
+
+---
+
+# Clases del Sistema
+
+## Aplicacion
+
+Clase principal que coordina la ejecución del pipeline de análisis.
+
+**Atributos**
+
+- cargador  
+- analizador_eda  
+- preprocesador  
+- modelador  
+- evaluador  
+- visualizador  
+
+**Métodos**
+
+```
+ejecutar()
+inicializar_componentes()
+renderizar_barra_lateral()
+renderizar_metricas()
+renderizar_graficas()
+```
+
+---
+
+## CargadorDatos
+
+Responsable de obtener los datos y almacenarlos para su procesamiento.
+
+**Atributos**
+
+```
+url_base
+tiempo_espera
+datos_crudos
+```
+
+**Métodos**
+
+```
+obtener_datos_lanzamientos()
+obtener_datos_cohetes()
+manejar_error()
+```
+
+---
+
+## AnalizadorExploratorio
+
+Encargado del **Análisis Exploratorio de Datos (EDA)**.
+
+**Atributos**
+
+```
+datos : DataFrame
+```
+
+**Métodos**
+
+```
+resumen_general()
+estadisticas_descriptivas()
+detectar_nulos()
+detectar_atipicos(columna)
+distribucion_por_categoria(columna)
+```
+
+---
+
+## Preprocesador
+
+Realiza la limpieza y transformación de los datos antes del modelado.
+
+**Atributos**
+
+```
+datos_brutos
+```
+
+**Métodos**
+
+```
+filtrar_por_anio(anio)
+filtrar_por_exito(exitoso)
+limpiar_nulos(datos)
+normalizar_fechas(datos)
+a_dataframe()
+obtener_anios_disponibles()
+```
+
+---
+
+## Modelador
+
+Encargado del análisis y generación de predicciones mediante modelos.
+
+**Atributos**
+
+```
+datos : DataFrame
+modelo
+predicciones
+```
+
+**Métodos**
+
+```
+tasa_exito_por_anio()
+lanzamientos_por_cohete()
+analisis_tendencia()
+entrenar_regresion_lineal()
+predecir_proximo_anio()
+obtener_coeficientes()
+```
+
+---
+
+## Evaluador
+
+Evalúa la calidad del modelo generado.
+
+**Atributos**
+
+```
+valores_reales
+predicciones
+```
+
+**Métodos**
+
+```
+calcular_r2()
+calcular_rmse()
+calcular_mae()
+generar_reporte()
+```
+
+---
+
+## Visualizador
+
+Genera gráficos para interpretar los resultados del análisis.
+
+**Métodos**
+
+```
+graficar_linea_temporal()
+graficar_barras_comparativas()
+graficar_frecuencia_mensual()
+graficar_comparacion_costos()
+graficar_metricas_evaluacion()
+```
+
+---
+
+# Estructura del Proyecto
+
+```
+analisis-datos-python
+│
+├── src
+│   ├── aplicacion.py
+│   ├── cargador_datos.py
+│   ├── analizador_exploratorio.py
+│   ├── preprocesador.py
+│   ├── modelador.py
+│   ├── evaluador.py
+│   └── visualizador.py
+        app.pu
+│
+├── main.py
 ├── requirements.txt
+    tests.txt
 └── README.md
+```
 
+---
+
+# Instalación
+
+Clonar el repositorio:
+
+```bash
+git clone https://github.com/usuario/analisis-datos-python.git
+cd analisis-datos-python
+```
+
+Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# Ejecución
+
+Ejecutar la aplicación desde consola:
+
+```bash
+python main.py
+```
+
+El sistema ejecutará el pipeline completo de análisis de datos y mostrará los resultados.
+
+---
+
+# Licencia
+
+Este proyecto se distribuye bajo la licencia **MIT**.
