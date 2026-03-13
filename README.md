@@ -129,8 +129,6 @@ datos_crudos
 **Métodos**
 
 ```
-obtener_datos_lanzamientos()
-obtener_datos_cohetes()
 manejar_error()
 ```
 
@@ -165,7 +163,7 @@ Realiza la limpieza y transformación de los datos antes del modelado.
 **Atributos**
 
 ```
-datos_brutos
+datos
 ```
 
 **Métodos**
