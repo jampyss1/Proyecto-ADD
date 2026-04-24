@@ -1,0 +1,121 @@
+ID,Nombre,Edad,Carrera,Promedio
+1,Estudiante_1,21.0,Ciencia de Datos,6.81
+2,Estudiante_2,20.0,Telemática,6.71
+3,Estudiante_3,19.0,Sistemas,
+4,Estudiante_4,19.0,IA,7.87
+5,Estudiante_5,20.0,Sistemas,7.51
+6,Estudiante_6,19.0,Telemática,7.52
+7,Estudiante_7,19.0,Telemática,6.62
+8,Estudiante_8,22.0,Ciencia de Datos,8.78
+9,Estudiante_9,19.0,Sistemas,
+10,Estudiante_10,21.0,Sistemas,7.83
+11,Estudiante_11,21.0,Telemática,9.06
+12,Estudiante_12,20.0,IA,7.4
+13,Estudiante_13,22.0,IA,9.51
+14,Estudiante_14,20.0,Ciencia de Datos,8.33
+15,Estudiante_15,21.0,Telemática,7.41
+16,Estudiante_16,20.0,IA,6.41
+17,Estudiante_17,21.0,Sistemas,7.31
+18,Estudiante_18,22.0,Sin Carrera,9.33
+19,Estudiante_19,22.0,Sistemas,9.87
+20,Estudiante_20,20.0,Telemática,7.42
+21,Estudiante_21,20.0,IA,9.63
+22,Estudiante_22,18.0,Telemática,9.09
+23,Estudiante_23,20.0,Sin Carrera,7.11
+24,Estudiante_24,22.0,Sistemas,7.83
+25,Estudiante_25,22.0,Sin Carrera,9.77
+26,Estudiante_26,20.0,IA,
+27,Estudiante_27,21.0,IA,7.4
+28,Estudiante_28,21.0,IA,9.0
+29,Estudiante_29,19.0,Sin Carrera,8.34
+30,Estudiante_30,19.0,Sin Carrera,8.96
+31,Estudiante_31,22.0,Telemática,
+32,Estudiante_32,19.0,Ciencia de Datos,8.02
+33,Estudiante_33,20.0,IA,7.33
+34,Estudiante_34,20.0,IA,7.63
+35,Estudiante_35,19.0,Sistemas,9.66
+36,Estudiante_36,20.0,Telemática,
+37,Estudiante_37,20.0,Ciencia de Datos,9.34
+38,Estudiante_38,19.0,Sistemas,
+39,Estudiante_39,20.0,Ciencia de Datos,8.3
+40,Estudiante_40,20.0,Ciencia de Datos,
+41,Estudiante_41,21.0,Telemática,9.91
+42,Estudiante_42,22.0,IA,7.37
+43,Estudiante_43,19.0,Sistemas,9.29
+44,Estudiante_44,22.0,Sin Carrera,7.59
+45,Estudiante_45,19.0,IA,
+46,Estudiante_46,22.0,Sistemas,8.83
+47,Estudiante_47,20.0,Telemática,9.93
+48,Estudiante_48,22.0,Telemática,6.74
+49,Estudiante_49,20.0,Ciencia de Datos,7.81
+50,Estudiante_50,18.0,Telemática,6.58
+51,Estudiante_51,20.0,IA,7.31
+52,Estudiante_52,18.0,Sistemas,6.8
+53,Estudiante_53,20.0,IA,6.4
+54,Estudiante_54,20.0,Sin Carrera,8.0
+55,Estudiante_55,20.0,Telemática,9.11
+56,Estudiante_56,20.0,Sin Carrera,9.5
+57,Estudiante_57,20.0,Sistemas,8.94
+58,Estudiante_58,18.0,Ciencia de Datos,6.06
+59,Estudiante_59,19.0,IA,7.43
+60,Estudiante_60,18.0,Sin Carrera,9.97
+61,Estudiante_61,22.0,Sin Carrera,9.04
+62,Estudiante_62,21.0,Telemática,8.03
+63,Estudiante_63,20.0,IA,6.78
+64,Estudiante_64,22.0,Sin Carrera,8.28
+65,Estudiante_65,18.0,Sistemas,9.87
+66,Estudiante_66,22.0,Sin Carrera,8.85
+67,Estudiante_67,20.0,Sin Carrera,9.68
+68,Estudiante_68,20.0,Ciencia de Datos,9.68
+69,Estudiante_69,20.0,Sistemas,
+70,Estudiante_70,19.0,IA,7.67
+71,Estudiante_71,19.0,Ciencia de Datos,6.2
+72,Estudiante_72,18.0,Ciencia de Datos,
+73,Estudiante_73,20.0,Sin Carrera,6.81
+74,Estudiante_74,19.0,Sin Carrera,8.23
+75,Estudiante_75,22.0,Sin Carrera,9.25
+76,Estudiante_76,20.0,Ciencia de Datos,
+77,Estudiante_77,21.0,Sistemas,7.72
+78,Estudiante_78,18.0,Sistemas,9.31
+79,Estudiante_79,20.0,Telemática,
+80,Estudiante_80,20.0,IA,7.0
+81,Estudiante_81,18.0,Sistemas,8.58
+82,Estudiante_82,19.0,Telemática,7.16
+83,Estudiante_83,22.0,Sistemas,6.68
+84,Estudiante_84,20.0,Sistemas,6.92
+85,Estudiante_85,20.0,Telemática,6.02
+86,Estudiante_86,22.0,Telemática,7.24
+87,Estudiante_87,18.0,IA,8.55
+88,Estudiante_88,21.0,Telemática,7.96
+89,Estudiante_89,18.0,Ciencia de Datos,8.58
+90,Estudiante_90,21.0,Sin Carrera,9.95
+91,Estudiante_91,18.0,Sin Carrera,6.36
+92,Estudiante_92,21.0,Ciencia de Datos,9.65
+93,Estudiante_93,21.0,Sin Carrera,9.46
+94,Estudiante_94,20.0,Sistemas,
+95,Estudiante_95,18.0,IA,7.79
+96,Estudiante_96,22.0,Ciencia de Datos,7.69
+97,Estudiante_97,21.0,IA,8.06
+98,Estudiante_98,20.0,Ciencia de Datos,7.04
+99,Estudiante_99,20.0,Ciencia de Datos,7.46
+100,Estudiante_100,18.0,IA,8.09
+101,Estudiante_101,21.0,Sin Carrera,6.77
+102,Estudiante_102,19.0,IA,6.03
+103,Estudiante_103,22.0,Sin Carrera,
+104,Estudiante_104,22.0,IA,7.22
+105,Estudiante_105,20.0,IA,8.46
+106,Estudiante_106,22.0,IA,6.03
+107,Estudiante_107,18.0,Sin Carrera,7.6
+108,Estudiante_108,21.0,Sin Carrera,6.48
+109,Estudiante_109,20.0,Sin Carrera,8.57
+110,Estudiante_110,18.0,Sistemas,6.5
+111,Estudiante_111,20.0,Sin Carrera,8.54
+112,Estudiante_112,18.0,IA,7.41
+113,Estudiante_113,20.0,Ciencia de Datos,6.91
+114,Estudiante_114,19.0,Ciencia de Datos,6.19
+115,Estudiante_115,20.0,Ciencia de Datos,7.92
+116,Estudiante_116,19.0,Sin Carrera,7.49
+117,Estudiante_117,18.0,Ciencia de Datos,6.57
+118,Estudiante_118,22.0,Telemática,6.6
+119,Estudiante_119,20.0,Sistemas,7.41
+120,Estudiante_120,21.0,Sistemas,

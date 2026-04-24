@@ -1,0 +1,13 @@
+id,producto,precio,categoria,stock
+1,Laptop Gamer,1500.00,Electrónica,12
+2,Mouse Inalámbrico,25.50,Electrónica,50
+3,Teclado Mecánico,85.00,Electrónica,30
+4,Silla de Oficina,120.00,Mobiliario,15
+5,Escritorio,200.00,Mobiliario,8
+6,Monitor 24 pulgadas,180.00,Electrónica,20
+7,Cable HDMI 2m,10.00,Accesorios,100
+8,Auriculares Bluetooth,60.00,Accesorios,40
+9,Webcam HD 1080p,45.00,Accesorios,25
+10,Hub USB Tipo C,15.00,Accesorios,60
+11,Disco Duro Externo 1TB,55.00,Almacenamiento,35
+12,Memoria RAM 16GB,70.00,Componentes,22
