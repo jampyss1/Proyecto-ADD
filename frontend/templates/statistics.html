@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Statistics{% endblock %}
+
+{% block head %}
+<style>
+.chart-grid{stroke:#334155;stroke-dasharray:4;stroke-opacity:.5}
+.chart-axis{stroke:#869397;stroke-width:1}
+.chart-text{fill:#869397;font-size:12px}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="flex-1 p-container-padding overflow-y-auto bg-background">
+<div class="flex justify-between items-center mb-8">
+<div>
+    <h1 class="font-headline-lg text-headline-lg text-on-surface">Análisis Exploratorio</h1>
+    <div class="flex items-center gap-2 mt-1">
+        <p class="text-on-surface-variant">Fuente:</p>
+        <select id="source-selector" class="bg-surface-container border border-outline-variant rounded px-2 py-1 text-primary font-code-md outline-none focus:border-primary">
+            <option value="">Selecciona una fuente...</option>
+        </select>
+    </div>
+</div>
+<button onclick="runEDA()" class="bg-primary text-on-primary px-4 py-2 rounded font-label-md text-label-md hover:bg-primary-container transition-colors flex items-center gap-2">
+    <span class="material-symbols-outlined">bolt</span>Ejecutar EDA
+</button>
+</div>
+
+<!-- Placeholder for Loading State -->
+<div id="eda-loading" class="hidden flex flex-col items-center justify-center h-[400px]">
+    <span class="material-symbols-outlined text-primary text-[48px] animate-spin">autorenew</span>
+    <p class="text-on-surface-variant mt-4 font-body-md">Calculando estadísticas...</p>
+</div>
+
+<!-- Placeholder for Empty State -->
+<div id="eda-empty" class="flex flex-col items-center justify-center h-[400px] border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low">
+    <span class="material-symbols-outlined text-on-surface-variant text-[48px]">analytics</span>
+    <p class="text-on-surface-variant mt-4 font-body-md text-center max-w-sm">Selecciona una fuente de datos y haz clic en "Ejecutar EDA" para ver el análisis exploratorio completo.</p>
+</div>
+
+<div id="eda-results" class="grid grid-cols-1 md:grid-cols-12 gap-gutter hidden">
+    <!-- Tabla descriptiva -->
+    <div class="md:col-span-12 bg-surface-container rounded-lg border border-outline-variant p-margin-lg">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">table_view</span>Resumen Numérico</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-surface-container-high border-b border-outline-variant">
+                    <tr>
+                        <th class="p-3 font-label-md text-label-md uppercase">Feature</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">Count</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">Mean</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">Std</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">Min</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">25%</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">50%</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">75%</th>
+                        <th class="p-3 text-right font-label-md text-label-md uppercase">Max</th>
+                    </tr>
+                </thead>
+                <tbody id="eda-descriptive-body" class="font-code-md text-code-md text-on-surface-variant">
+                    <!-- JS Injected -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Outliers Totales -->
+    <div class="md:col-span-6 bg-surface-container rounded-lg border border-outline-variant p-margin-lg flex flex-col">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-primary">candlestick_chart</span>Valores Atípicos (Outliers)</h3>
+        <p class="text-on-surface-variant text-sm mb-4">Detección por método IQR</p>
+        <div id="eda-outliers-container" class="space-y-4">
+            <!-- JS Injected -->
+        </div>
+    </div>
+
+    <!-- Valores Nulos -->
+    <div class="md:col-span-6 bg-surface-container rounded-lg border border-outline-variant p-margin-lg flex flex-col">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-2 flex items-center gap-2"><span class="material-symbols-outlined text-primary">bar_chart</span>Valores Faltantes</h3>
+        <p class="text-on-surface-variant text-sm mb-4">Porcentaje de valores nulos por columna</p>
+        <div id="eda-nulls-container" class="space-y-4">
+            <!-- JS Injected -->
+        </div>
+    </div>
+
+    <!-- Distribución categórica (Primera columna) -->
+    <div class="md:col-span-12 bg-surface-container rounded-lg border border-outline-variant p-margin-lg">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-primary">horizontal_distribute</span>Distribución Categórica</h3>
+        <div id="eda-categorical-container" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- JS Injected -->
+        </div>
+    </div>
+</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadSourcesForSelect() {
+        try {
+            const res = await fetch('/api/sources');
+            const data = await res.json();
+            const select = document.getElementById('source-selector');
+            
+            // Clean
+            select.innerHTML = '<option value="">Selecciona una fuente...</option>';
+            
+            if (data.sources) {
+                data.sources.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.name;
+                    opt.textContent = s.name;
+                    select.appendChild(opt);
+                });
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+
+    async function runEDA() {
+        const sourceName = document.getElementById('source-selector').value;
+        if (!sourceName) {
+            showToast("Por favor selecciona una fuente primero", "error");
+            return;
+        }
+
+        // Toggle UI states
+        document.getElementById('eda-empty').classList.add('hidden');
+        document.getElementById('eda-results').classList.add('hidden');
+        document.getElementById('eda-loading').classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/eda/${encodeURIComponent(sourceName)}`, { method: 'POST' });
+            const data = await res.json();
+            
+            document.getElementById('eda-loading').classList.add('hidden');
+            
+            if (res.ok) {
+                renderEDAResults(data);
+                document.getElementById('eda-results').classList.remove('hidden');
+                showToast("Análisis completado", "success");
+            } else {
+                document.getElementById('eda-empty').classList.remove('hidden');
+                showToast(data.detail || "Error en el análisis", "error");
+            }
+        } catch(e) {
+            console.error(e);
+            document.getElementById('eda-loading').classList.add('hidden');
+            document.getElementById('eda-empty').classList.remove('hidden');
+            showToast("Error de conexión al servidor", "error");
+        }
+    }
+
+    function renderEDAResults(data) {
+        // 1. Resumen Descriptivo
+        const descBody = document.getElementById('eda-descriptive-body');
+        descBody.innerHTML = '';
+        
+        let i = 0;
+        for (const [feature, stats] of Object.entries(data.descriptive)) {
+            const trClass = i % 2 === 0 ? "bg-surface-container" : "bg-surface-container-low";
+            const formatNum = (val) => val !== null && val !== undefined ? Number(val).toFixed(2) : '-';
+            
+            descBody.innerHTML += `
+                <tr class="${trClass} border-b border-outline-variant/50 hover:bg-surface-container-high">
+                    <td class="p-3 font-bold text-primary">${feature}</td>
+                    <td class="p-3 text-right">${stats.count || '-'}</td>
+                    <td class="p-3 text-right">${formatNum(stats.mean)}</td>
+                    <td class="p-3 text-right">${formatNum(stats.std)}</td>
+                    <td class="p-3 text-right">${formatNum(stats.min)}</td>
+                    <td class="p-3 text-right">${formatNum(stats['25%'])}</td>
+                    <td class="p-3 text-right">${formatNum(stats['50%'])}</td>
+                    <td class="p-3 text-right">${formatNum(stats['75%'])}</td>
+                    <td class="p-3 text-right">${formatNum(stats.max)}</td>
+                </tr>
+            `;
+            i++;
+        }
+
+        // 2. Valores Atípicos (Outliers)
+        const outContainer = document.getElementById('eda-outliers-container');
+        outContainer.innerHTML = '';
+        const totalRows = data.dimensions.rows;
+        
+        if(Object.keys(data.outliers).length === 0) {
+            outContainer.innerHTML = '<p class="text-on-surface-variant italic">No se detectaron columnas numéricas para evaluar outliers.</p>';
+        } else {
+            for (const [feature, count] of Object.entries(data.outliers)) {
+                const pct = ((count / totalRows) * 100).toFixed(1);
+                outContainer.innerHTML += `
+                    <div>
+                        <div class="flex justify-between font-label-md text-label-md text-on-surface-variant mb-1">
+                            <span>${feature}</span><span class="font-code-md text-tertiary">${count} (${pct}%)</span>
+                        </div>
+                        <div class="w-full bg-surface-container-high rounded-full h-2">
+                            <div class="bg-tertiary h-2 rounded-full" style="width:${Math.min(pct * 2, 100)}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 3. Nulos
+        const nullsContainer = document.getElementById('eda-nulls-container');
+        nullsContainer.innerHTML = '';
+        if(Object.keys(data.nulls).length === 0) {
+            nullsContainer.innerHTML = '<div class="flex items-center gap-2 text-green-400 font-label-md"><span class="material-symbols-outlined">check_circle</span> Dataset 100% limpio (sin nulos)</div>';
+        } else {
+            for (const [feature, pct] of Object.entries(data.nulls)) {
+                nullsContainer.innerHTML += `
+                    <div>
+                        <div class="flex justify-between font-label-md text-label-md text-on-surface-variant mb-1">
+                            <span>${feature}</span><span class="font-code-md text-error">${pct}%</span>
+                        </div>
+                        <div class="w-full bg-surface-container-high rounded-full h-2">
+                            <div class="bg-error h-2 rounded-full" style="width:${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 4. Categorías
+        const catContainer = document.getElementById('eda-categorical-container');
+        catContainer.innerHTML = '';
+        if(Object.keys(data.categorical).length === 0) {
+            catContainer.innerHTML = '<p class="text-on-surface-variant italic col-span-2">No se detectaron columnas categóricas o de texto.</p>';
+        } else {
+            for (const [feature, dist] of Object.entries(data.categorical)) {
+                let html = `<div class="bg-surface-container-low p-4 rounded border border-outline-variant"><h4 class="font-bold text-primary mb-3">${feature}</h4><div class="space-y-3">`;
+                
+                // Sort by freq descending and take top 5
+                const sortedKeys = Object.keys(dist).sort((a,b) => dist[b] - dist[a]).slice(0, 5);
+                
+                sortedKeys.forEach((key, idx) => {
+                    const count = dist[key];
+                    const pct = ((count / totalRows) * 100).toFixed(1);
+                    const alpha = 1 - (idx * 0.15); // fade out effect
+                    html += `
+                        <div>
+                            <div class="flex justify-between font-label-md text-label-md text-on-surface-variant mb-1">
+                                <span class="truncate pr-2">${key}</span><span class="font-code-md">${count} (${pct}%)</span>
+                            </div>
+                            <div class="w-full bg-surface-container-high rounded-full h-2">
+                                <div class="bg-primary rounded-full h-2" style="width:${pct}%; opacity:${alpha}"></div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `</div></div>`;
+                catContainer.innerHTML += html;
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSourcesForSelect();
+    });
+</script>
+{% endblock %}

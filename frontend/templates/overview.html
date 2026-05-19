@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Overview{% endblock %}
+
+{% block content %}
+<div class="p-container-padding space-y-gutter flex-1 overflow-y-auto">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="bg-surface-container rounded-lg border border-outline-variant p-container-padding flex flex-col justify-between hover:border-primary/50 transition-colors group">
+<div class="flex justify-between items-start mb-4"><span class="font-label-md text-label-md text-on-surface-variant uppercase">Total Sources</span><span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">database</span></div>
+<div class="flex items-baseline gap-2"><span id="metric-total-sources" class="font-headline-lg text-headline-lg text-on-surface">0</span><span class="font-body-md text-body-md text-outline">Loaded in Memory</span></div>
+</div>
+<div class="bg-surface-container rounded-lg border border-outline-variant p-container-padding flex flex-col justify-between hover:border-primary/50 transition-colors group">
+<div class="flex justify-between items-start mb-4"><span class="font-label-md text-label-md text-on-surface-variant uppercase">Memory Usage</span><span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">memory</span></div>
+<div class="flex items-baseline gap-2 mb-2"><span id="metric-memory" class="font-headline-lg text-headline-lg text-on-surface">0<span class="text-headline-md text-on-surface-variant">KB</span></span></div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden"><div class="h-full bg-primary rounded-full w-[5%]"></div></div>
+</div>
+<div class="bg-surface-container rounded-lg border border-outline-variant p-container-padding flex flex-col justify-between hover:border-primary/50 transition-colors group">
+<div class="flex justify-between items-start mb-4"><span class="font-label-md text-label-md text-on-surface-variant uppercase">PostgreSQL Status</span><span class="material-symbols-outlined text-primary group-hover:scale-110 transition-transform">link</span></div>
+<div class="flex items-baseline gap-2"><span id="metric-db-status" class="font-body-md text-body-md text-error flex items-center text-sm"><span class="material-symbols-outlined text-[16px]">cloud_off</span> Disconnected</span></div>
+</div>
+<!-- Last Activity Card Removida -->
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter mt-margin-lg">
+<div class="lg:col-span-12 bg-surface-container rounded-lg border border-outline-variant flex flex-col overflow-hidden">
+<div class="px-container-padding py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2"><span class="material-symbols-outlined text-primary">table_chart</span>Fuentes en Memoria</h3>
+<button onclick="loadSourcesTable()" class="text-primary hover:bg-primary/10 p-1.5 rounded transition-colors"><span class="material-symbols-outlined text-[20px]">refresh</span></button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead><tr class="bg-surface-container-high border-b border-outline-variant">
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Name</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Type</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Rows / Cols</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Size</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-center">Status</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr></thead>
+<tbody id="sources-table-body" class="font-body-md text-body-md text-on-surface divide-y divide-outline-variant/30">
+<!-- Filas renderizadas por JS -->
+</tbody>
+</table>
+</div>
+</div>
+<!-- Timeline removido -->
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadSourcesTable() {
+        try {
+            const response = await fetch('/api/sources');
+            const data = await response.json();
+            
+            const tbody = document.getElementById('sources-table-body');
+            tbody.innerHTML = '';
+            
+            document.getElementById('metric-total-sources').textContent = data.sources.length;
+            
+            if (data.sources.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-on-surface-variant">No hay fuentes cargadas en memoria. Ve a la pestaña Pipelines para cargar datos.</td></tr>';
+                return;
+            }
+            
+            data.sources.forEach((src, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? "bg-surface-container hover:bg-surface-variant/40 transition-colors" : "bg-surface-container-low hover:bg-surface-variant/40 transition-colors";
+                
+                let icon = 'description';
+                let colorClass = 'bg-primary/10 text-primary border-primary/20';
+                
+                if (src.type === 'SQL') { icon = 'storage'; colorClass = 'bg-[#a78bfa]/10 text-[#a78bfa] border-[#a78bfa]/20'; }
+                else if (src.type === 'NoSQL') { icon = 'data_object'; colorClass = 'bg-tertiary/10 text-tertiary border-tertiary/20'; }
+                else if (src.type === 'TSV') { colorClass = 'bg-secondary/10 text-secondary border-secondary/20'; }
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-medium flex items-center gap-2"><span class="material-symbols-outlined text-on-surface-variant text-[18px]">${icon}</span>${src.name}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 rounded text-xs border ${colorClass}">${src.type}</span></td>
+                    <td class="py-3 px-4 text-right font-code-md text-code-md">${src.rows} / ${src.cols}</td>
+                    <td class="py-3 px-4 text-right text-on-surface-variant">${src.size}</td>
+                    <td class="py-3 px-4 text-center"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs border border-primary/20"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span>Ready</span></td>
+                    <td class="py-3 px-4 text-right">
+                        <button onclick="deleteSource('${src.name}')" class="text-error hover:text-red-400 p-1 rounded transition-colors" title="Eliminar"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+        } catch (error) {
+            console.error("Error loading sources:", error);
+            showToast("Error al cargar las fuentes de memoria", "error");
+        }
+    }
+
+    async function deleteSource(name) {
+        if(!confirm(`¿Estás seguro que deseas eliminar '${name}'?`)) return;
+        
+        try {
+            const res = await fetch(`/api/sources/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            if(res.ok) {
+                showToast(`Fuente eliminada`, "success");
+                loadSourcesTable();
+                updateSourcesCount(); // de app.js
+            } else {
+                showToast("Error al eliminar", "error");
+            }
+        } catch(e) {
+            console.error(e);
+            showToast("Error de red", "error");
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSourcesTable();
+    });
+</script>
+{% endblock %}
