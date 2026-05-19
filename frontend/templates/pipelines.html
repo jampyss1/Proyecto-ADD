@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Pipelines{% endblock %}
+
+{% block content %}
+<main class="flex-1 p-container-padding flex flex-col gap-container-padding max-w-7xl mx-auto w-full">
+<div class="mb-4"><h3 class="font-headline-lg text-headline-lg text-on-surface mb-1">Ingestion Pipeline</h3><p class="text-on-surface-variant">Upload, preview, and process raw datasets.</p></div>
+
+<!-- Zona de Drag and Drop -->
+<section id="drop-zone" class="bg-surface-container border border-outline-variant rounded-xl p-8 flex flex-col items-center justify-center border-dashed border-2 hover:border-primary transition-colors cursor-pointer group relative overflow-hidden">
+<div class="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="w-20 h-20 bg-surface-container-high rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><span class="material-symbols-outlined text-[40px] text-primary">cloud_upload</span></div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">Drag & Drop Dataset</h4>
+<p class="text-on-surface-variant mb-6 text-center max-w-md">Drop your files here or click to browse.</p>
+<div class="flex gap-4">
+<span class="px-3 py-1 bg-surface-variant text-on-surface rounded font-code-md text-code-md border border-outline-variant">.CSV</span>
+<span class="px-3 py-1 bg-surface-variant text-on-surface rounded font-code-md text-code-md border border-outline-variant">.TSV</span>
+<span class="px-3 py-1 bg-surface-variant text-on-surface rounded font-code-md text-code-md border border-outline-variant">.JSON</span>
+</div>
+
+<input type="file" id="file-upload" class="hidden" accept=".csv,.tsv,.json" />
+<label for="file-upload" class="cursor-pointer mt-8 px-6 py-2 bg-surface-container-highest border border-outline-variant text-on-surface font-label-md text-label-md rounded hover:border-primary transition-colors relative z-10">
+    Browse Local Files
+</label>
+</section>
+
+<section class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-3"><span class="material-symbols-outlined text-primary">visibility</span><h4 class="font-headline-sm text-headline-sm text-on-surface">Data Preview</h4></div>
+<div class="flex items-center gap-2 bg-surface-variant px-3 py-1 rounded border border-outline-variant"><span class="material-symbols-outlined text-[16px] text-on-surface-variant">description</span><span id="preview-filename" class="font-code-md text-code-md text-primary">...</span></div>
+</div>
+<div class="overflow-x-auto"><table class="w-full text-left border-collapse">
+<thead id="preview-head" class="bg-surface-container-high border-b border-outline-variant font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
+    <tr><th class="px-6 py-3">Selecciona un archivo para previsualizar</th></tr>
+</thead>
+<tbody id="preview-body" class="font-code-md text-code-md text-on-surface divide-y divide-outline-variant/50">
+    <!-- Renderizado por JS -->
+</tbody></table></div>
+<div class="px-6 py-3 border-t border-outline-variant bg-surface-container-low text-right"><span id="preview-footer" class="font-label-md text-label-md text-on-surface-variant"></span></div>
+</section>
+
+<section class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-low"><h4 class="font-headline-sm text-headline-sm text-on-surface">Archivos Cargados a Memoria</h4><span class="material-symbols-outlined text-on-surface-variant hover:text-primary cursor-pointer" onclick="loadLoadedFiles()">refresh</span></div>
+<div id="loaded-files-grid" class="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <!-- Renderizado por JS -->
+</div>
+</section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const fileUpload = document.getElementById('file-upload');
+    const dropZone = document.getElementById('drop-zone');
+    
+    // Drag and drop event listeners
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight(e) {
+        dropZone.classList.add('border-primary');
+        dropZone.classList.add('bg-primary/5');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('border-primary');
+        dropZone.classList.remove('bg-primary/5');
+    }
+    
+    dropZone.addEventListener('drop', handleDrop, false);
+    fileUpload.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            uploadFile(this.files[0]);
+        }
+    });
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if(files.length > 0) {
+            uploadFile(files[0]);
+        }
+    }
+    
+    async function uploadFile(file) {
+        const validExtensions = ['.csv', '.tsv', '.json'];
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        
+        if (!validExtensions.includes(ext)) {
+            showToast("Formato no válido. Usa CSV, TSV o JSON", "error");
+            return;
+        }
+        
+        showToast(`Subiendo ${file.name}...`, "info");
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            if (response.ok) {
+                showToast(`Archivo ${file.name} procesado (${data.rows} filas)`, "success");
+                updateSourcesCount();
+                loadLoadedFiles();
+                
+                // Mostrar un mock preview o hacer que la API devuelva las primeras filas
+                document.getElementById('preview-filename').textContent = file.name;
+                document.getElementById('preview-footer').textContent = `Total rows: ${data.rows}`;
+                
+            } else {
+                showToast(data.detail || "Error al procesar", "error");
+            }
+        } catch (error) {
+            console.error(error);
+            showToast("Error de conexión", "error");
+        }
+    }
+    
+    async function loadLoadedFiles() {
+        try {
+            const response = await fetch('/api/sources');
+            const data = await response.json();
+            
+            const grid = document.getElementById('loaded-files-grid');
+            grid.innerHTML = '';
+            
+            if (data.sources.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-4 text-center text-on-surface-variant">No hay fuentes en memoria.</div>';
+                return;
+            }
+            
+            data.sources.forEach(src => {
+                let icon = 'description';
+                let colorClass = 'text-primary';
+                
+                if (src.type === 'SQL') { icon = 'storage'; colorClass = 'text-[#a78bfa]'; }
+                else if (src.type === 'NoSQL') { icon = 'data_object'; colorClass = 'text-tertiary'; }
+                else if (src.type === 'TSV') { colorClass = 'text-secondary'; }
+                
+                const card = document.createElement('div');
+                card.className = 'bg-surface border border-outline-variant rounded-lg p-4 flex flex-col gap-4 hover:border-primary/50 transition-colors';
+                card.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="flex gap-3">
+                        <div class="w-10 h-10 bg-surface-variant rounded flex items-center justify-center ${colorClass} border border-outline-variant">
+                            <span class="material-symbols-outlined">${icon}</span>
+                        </div>
+                        <div>
+                            <h5 class="font-bold text-on-surface truncate w-32 md:w-48" title="${src.name}">${src.name}</h5>
+                            <p class="font-label-md text-label-md text-on-surface-variant">${src.size} · ${src.cols} Cols</p>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-[18px] text-green-400" title="Validated">check_circle</span>
+                </div>
+                `;
+                grid.appendChild(card);
+            });
+        } catch(e) {
+            console.error(e);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadLoadedFiles();
+    });
+</script>
+{% endblock %}

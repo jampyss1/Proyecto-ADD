@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Editor{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex overflow-hidden">
+<!-- Schema Explorer Sidebar -->
+<div class="w-72 bg-surface-container-low border-r border-outline-variant flex flex-col">
+    <div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container">
+        <span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Explorer</span>
+        <button onclick="loadExplorer()" class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-sm">refresh</span></button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-2">
+        <ul class="space-y-1">
+            <li>
+                <div class="flex items-center gap-2 px-2 py-1.5 text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+                    <span class="material-symbols-outlined text-[18px] text-primary">database</span>
+                    <span id="explorer-db-name" class="font-code-md text-code-md">Conectando...</span>
+                </div>
+                <ul class="pl-6 mt-1 space-y-1">
+                    <li>
+                        <div class="flex items-center gap-2 px-2 py-1.5 text-on-surface-variant">
+                            <span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+                            <span class="material-symbols-outlined text-[18px] text-tertiary">folder</span>
+                            <span class="font-code-md text-code-md">public</span>
+                        </div>
+                        <ul id="explorer-tables-list" class="pl-6 mt-1 space-y-1">
+                            <!-- JS Injected -->
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- Editor & Results -->
+<div class="flex-1 flex flex-col bg-background overflow-hidden">
+    <!-- Schema details -->
+    <div class="h-1/2 flex flex-col border-b border-outline-variant bg-surface">
+        <div class="px-6 py-3 border-b border-outline-variant flex items-center gap-3 bg-surface-container-high">
+            <span class="material-symbols-outlined text-primary">schema</span>
+            <h2 class="font-label-md text-label-md text-on-surface uppercase">Esquema: <span id="schema-table-name">Selecciona una tabla</span></h2>
+        </div>
+        <div class="flex-1 overflow-auto bg-surface-container-lowest">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-surface-container z-10 border-b border-outline-variant">
+                    <tr>
+                        <th class="px-6 py-3 font-label-md text-label-md text-on-surface-variant uppercase w-1/3">Column</th>
+                        <th class="px-6 py-3 font-label-md text-label-md text-on-surface-variant uppercase">Type</th>
+                        <th class="px-6 py-3 font-label-md text-label-md text-on-surface-variant uppercase text-center w-24">Nullable</th>
+                        <th class="px-6 py-3 font-label-md text-label-md text-on-surface-variant uppercase text-center w-24">Key</th>
+                    </tr>
+                </thead>
+                <tbody id="schema-tbody" class="font-code-md text-code-md text-on-surface">
+                    <tr><td colspan="4" class="px-6 py-3 text-center text-on-surface-variant italic">Esperando selección...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Data Preview -->
+    <div class="h-1/2 flex flex-col bg-surface">
+        <div class="px-6 py-3 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-secondary">table_view</span>
+                <h2 class="font-label-md text-label-md text-on-surface uppercase">Preview (Top 10)</h2>
+            </div>
+            <button class="px-3 py-1 bg-surface-variant text-on-surface font-label-md text-label-md rounded border border-outline-variant hover:border-primary transition-colors cursor-not-allowed opacity-50">Run Custom Query</button>
+        </div>
+        <div class="flex-1 overflow-auto bg-background">
+            <table class="w-full text-left whitespace-nowrap border-collapse">
+                <thead id="preview-thead" class="sticky top-0 bg-surface-container-low z-10 border-b border-outline-variant">
+                    <!-- JS Injected -->
+                </thead>
+                <tbody id="preview-tbody" class="font-code-md text-code-md text-on-surface">
+                    <tr><td class="p-6 text-center text-on-surface-variant italic">Esperando selección...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function loadExplorer() {
+        try {
+            const res = await fetch('/api/database/tables');
+            if(!res.ok) {
+                document.getElementById('explorer-db-name').textContent = "Not Connected";
+                document.getElementById('explorer-tables-list').innerHTML = '<li class="px-2 py-1 text-on-surface-variant text-xs italic">Ve a la pestaña Databases para conectar</li>';
+                return;
+            }
+            
+            const data = await res.json();
+            document.getElementById('explorer-db-name').textContent = "Connected DB";
+            
+            const list = document.getElementById('explorer-tables-list');
+            list.innerHTML = '';
+            
+            data.tables.forEach((t, i) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div onclick="loadSchema('${t.name}')" class="flex items-center gap-2 px-2 py-1.5 hover:bg-surface-variant/50 cursor-pointer rounded text-on-surface-variant hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[18px]">table</span>
+                        <span class="font-code-md text-code-md">${t.name}</span>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+            
+            if(data.tables.length > 0) {
+                loadSchema(data.tables[0].name);
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+    
+    async function loadSchema(tableName) {
+        document.getElementById('schema-table-name').textContent = tableName;
+        document.getElementById('schema-tbody').innerHTML = '<tr><td colspan="4" class="p-4 text-center">Cargando...</td></tr>';
+        
+        try {
+            const res = await fetch(`/api/database/schema/${tableName}`);
+            const data = await res.json();
+            
+            if(res.ok) {
+                // Render Schema
+                const sBody = document.getElementById('schema-tbody');
+                sBody.innerHTML = '';
+                data.columns.forEach((col, i) => {
+                    const trClass = i % 2 === 0 ? "bg-surface-container-lowest" : "bg-surface-container";
+                    const pkIcon = col.is_pk ? '<span class="material-symbols-outlined text-[18px]">key</span>' : '';
+                    const nullIcon = col.nullable ? '<span class="material-symbols-outlined text-[18px]">check</span>' : '-';
+                    
+                    sBody.innerHTML += `
+                        <tr class="${trClass} border-b border-outline-variant/30 hover:bg-surface-variant/20">
+                            <td class="px-6 py-3 font-bold">${col.name}</td>
+                            <td class="px-6 py-3 text-primary">${col.type}</td>
+                            <td class="px-6 py-3 text-center text-on-surface-variant">${nullIcon}</td>
+                            <td class="px-6 py-3 text-center text-tertiary">${pkIcon}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Render Preview
+                const pHead = document.getElementById('preview-thead');
+                let hHtml = '<tr><th class="px-4 py-2 font-code-md text-primary bg-surface-container-low border-r border-outline-variant/50 w-12 text-center">#</th>';
+                data.columns.forEach(col => {
+                    hHtml += `<th class="px-6 py-2 font-code-md text-on-surface-variant border-r border-outline-variant/50">${col.name}</th>`;
+                });
+                hHtml += '</tr>';
+                pHead.innerHTML = hHtml;
+                
+                const pBody = document.getElementById('preview-tbody');
+                let bHtml = '';
+                data.preview.forEach((row, rIdx) => {
+                    const trClass = rIdx % 2 === 0 ? "bg-surface-container" : "bg-surface-container-lowest";
+                    let rowHtml = `<tr class="${trClass} hover:bg-surface-variant/40 border-b border-outline-variant/20">
+                        <td class="px-4 py-2 text-center text-on-surface-variant border-r border-outline-variant/50 bg-surface-container-lowest">${rIdx + 1}</td>`;
+                        
+                    data.columns.forEach(col => {
+                        rowHtml += `<td class="px-6 py-2 border-r border-outline-variant/50">${row[col.name] !== null ? row[col.name] : ''}</td>`;
+                    });
+                    rowHtml += '</tr>';
+                    bHtml += rowHtml;
+                });
+                pBody.innerHTML = bHtml;
+                
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        loadExplorer();
+    });
+</script>
+{% endblock %}

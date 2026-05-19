@@ -1,0 +1,110 @@
+[
+    {
+        "_id": 1,
+        "nombre": "Carlos Mendoza",
+        "edad": 21,
+        "carrera": "Ingeniería en Sistemas",
+        "contacto": {"email": "carlos.mendoza@uni.mx", "telefono": "3312345601"},
+        "direccion": {"ciudad": "Guadalajara", "estado": "Jalisco"},
+        "habilidades": ["Python", "Bases de Datos"]
+    },
+    {
+        "_id": 2,
+        "nombre": "María López",
+        "edad": 22,
+        "carrera": "Ciencia de Datos",
+        "contacto": {"email": "maria.lopez@uni.mx", "telefono": "3312345602"},
+        "direccion": {"ciudad": "Zapopan", "estado": "Jalisco"},
+        "habilidades": ["R", "Machine Learning", "SQL"]
+    },
+    {
+        "_id": 3,
+        "nombre": "Jorge Ramírez",
+        "edad": 20,
+        "carrera": "Telemática",
+        "contacto": {"email": "jorge.ramirez@uni.mx", "telefono": "3312345603"},
+        "direccion": {"ciudad": "Tlaquepaque", "estado": "Jalisco"},
+        "habilidades": ["Redes", "C++"]
+    },
+    {
+        "_id": 4,
+        "nombre": "Ana Torres",
+        "edad": 23,
+        "carrera": "Inteligencia Artificial",
+        "contacto": {"email": "ana.torres@uni.mx", "telefono": "3312345604"},
+        "direccion": {"ciudad": "Tonalá", "estado": "Jalisco"},
+        "habilidades": ["Deep Learning", "Python"]
+    },
+    {
+        "_id": 5,
+        "nombre": "Luis García",
+        "edad": 21,
+        "carrera": "Ingeniería en Sistemas",
+        "contacto": {"email": "luis.garcia@uni.mx", "telefono": "3312345605"},
+        "direccion": {"ciudad": "Monterrey", "estado": "Nuevo León"},
+        "habilidades": ["Java", "Spring Boot"]
+    },
+    {
+        "_id": 6,
+        "nombre": "Sofía Hernández",
+        "edad": 19,
+        "carrera": "Ciencia de Datos",
+        "contacto": {"email": "sofia.hdz@uni.mx", "telefono": "3312345606"},
+        "direccion": {"ciudad": "CDMX", "estado": "Ciudad de México"},
+        "habilidades": ["Pandas", "Estadística"]
+    },
+    {
+        "_id": 7,
+        "nombre": "Diego Martínez",
+        "edad": 24,
+        "carrera": "Telemática",
+        "contacto": {"email": "diego.mtz@uni.mx", "telefono": "3312345607"},
+        "direccion": {"ciudad": "Puebla", "estado": "Puebla"},
+        "habilidades": ["Linux", "Bash", "Redes"]
+    },
+    {
+        "_id": 8,
+        "nombre": "Valentina Cruz",
+        "edad": 20,
+        "carrera": "Inteligencia Artificial",
+        "contacto": {"email": "vale.cruz@uni.mx", "telefono": "3312345608"},
+        "direccion": {"ciudad": "Querétaro", "estado": "Querétaro"},
+        "habilidades": ["TensorFlow", "Keras"]
+    },
+    {
+        "_id": 9,
+        "nombre": "Fernando Díaz",
+        "edad": 22,
+        "carrera": "Ingeniería en Sistemas",
+        "contacto": {"email": "fer.diaz@uni.mx", "telefono": "3312345609"},
+        "direccion": {"ciudad": "León", "estado": "Guanajuato"},
+        "habilidades": ["C#", ".NET"]
+    },
+    {
+        "_id": 10,
+        "nombre": "Camila Ruiz",
+        "edad": 21,
+        "carrera": "Ciencia de Datos",
+        "contacto": {"email": "camila.ruiz@uni.mx", "telefono": "3312345610"},
+        "direccion": {"ciudad": "Mérida", "estado": "Yucatán"},
+        "habilidades": ["PowerBI", "Tableau", "SQL"]
+    },
+    {
+        "_id": 11,
+        "nombre": "Andrés Vega",
+        "edad": 23,
+        "carrera": "Telemática",
+        "contacto": {"email": "andres.vega@uni.mx", "telefono": "3312345611"},
+        "direccion": {"ciudad": "Guadalajara", "estado": "Jalisco"},
+        "habilidades": ["Seguridad", "Ethical Hacking"]
+    },
+    {
+        "_id": 12,
+        "nombre": "Isabella Morales",
+        "edad": 20,
+        "carrera": "Inteligencia Artificial",
+        "contacto": {"email": "isa.morales@uni.mx", "telefono": "3312345612"},
+        "direccion": {"ciudad": "Zapopan", "estado": "Jalisco"},
+        "habilidades": ["NLP", "Python"]
+    }
+]

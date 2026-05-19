@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Web Scraping{% endblock %}
+
+{% block content %}
+<main class="flex-1 p-container-padding flex flex-col gap-container-padding max-w-7xl mx-auto w-full">
+<div class="mb-4">
+    <h3 class="font-headline-lg text-headline-lg text-on-surface mb-1 flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-[32px]">public</span>Web Scraping
+    </h3>
+    <p class="font-body-md text-body-md text-on-surface-variant">Extract unstructured HTML data and convert it into structured datasets automatically.</p>
+</div>
+
+<!-- Input Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-8 flex flex-col items-center">
+    <div class="w-full max-w-3xl">
+        <label class="block font-label-md text-label-md text-on-surface-variant mb-2 uppercase">Target URL</label>
+        <div class="flex gap-4">
+            <div class="relative flex-1">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">link</span>
+                <input id="scrape-url" type="text" class="w-full bg-surface-container-low border border-outline-variant text-on-surface rounded-lg pl-10 pr-4 py-3 font-code-md text-code-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-outline" value="https://en.wikipedia.org/wiki/SpaceX" placeholder="https://example.com/data"/>
+            </div>
+            <button onclick="runScraping()" class="bg-primary text-on-primary-fixed px-6 py-3 rounded-lg font-label-md text-label-md font-bold uppercase hover:bg-primary-container transition-colors flex items-center gap-2 whitespace-nowrap">
+                <span class="material-symbols-outlined text-[20px]">search</span>Extract Data
+            </button>
+        </div>
+        <p class="font-body-md text-body-md text-on-surface-variant mt-3 text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px] text-tertiary">info</span>
+            The engine will scan the DOM for semantic &lt;table&gt; structures.
+        </p>
+    </div>
+</section>
+
+<!-- Loading State -->
+<div id="scrape-loading" class="hidden flex flex-col items-center justify-center h-[300px]">
+    <span class="material-symbols-outlined text-primary text-[48px] animate-spin">autorenew</span>
+    <p class="text-on-surface-variant mt-4 font-body-md">Extrayendo y parseando DOM...</p>
+</div>
+
+<!-- Results Area -->
+<div id="scrape-results" class="grid grid-cols-1 lg:grid-cols-12 gap-container-padding hidden">
+    <!-- Raw DOM Excerpt -->
+    <section class="lg:col-span-4 bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden h-[500px]">
+        <div class="px-6 py-4 border-b border-outline-variant bg-surface-container-low flex items-center gap-3">
+            <span class="material-symbols-outlined text-tertiary">code</span>
+            <h4 class="font-headline-sm text-headline-sm text-on-surface">Raw DOM Excerpt</h4>
+        </div>
+        <div class="p-4 flex-1 overflow-auto bg-surface-container-lowest">
+            <pre class="font-code-md text-code-md text-on-surface-variant whitespace-pre-wrap"><code id="raw-dom-content" class="language-html"></code></pre>
+        </div>
+    </section>
+
+    <!-- Structured Data Preview -->
+    <section class="lg:col-span-8 bg-surface-container border border-outline-variant rounded-xl flex flex-col overflow-hidden h-[500px]">
+        <div class="px-6 py-4 border-b border-outline-variant bg-surface-container-low flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">table_view</span>
+                <h4 class="font-headline-sm text-headline-sm text-on-surface">Structured Data (Table #1)</h4>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="tables-found-badge" class="font-label-md text-label-md bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded">0 Tables Found</span>
+                <span id="saved-source-badge" class="font-label-md text-label-md bg-green-500/10 text-green-400 border border-green-500/20 px-2 py-1 rounded hidden">Saved</span>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto bg-surface">
+            <table class="w-full text-left border-collapse whitespace-nowrap">
+                <thead id="scrape-thead" class="bg-surface-container-high border-b border-outline-variant sticky top-0">
+                    <!-- JS Injected -->
+                </thead>
+                <tbody id="scrape-tbody" class="font-code-md text-code-md text-on-surface divide-y divide-outline-variant/50">
+                    <!-- JS Injected -->
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function runScraping() {
+        const url = document.getElementById('scrape-url').value;
+        if (!url) return;
+        
+        document.getElementById('scrape-results').classList.add('hidden');
+        document.getElementById('scrape-loading').classList.remove('hidden');
+        
+        try {
+            const res = await fetch('/api/scrape', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({url: url})
+            });
+            
+            const data = await res.json();
+            document.getElementById('scrape-loading').classList.add('hidden');
+            
+            if(res.ok) {
+                document.getElementById('scrape-results').classList.remove('hidden');
+                
+                // Set Raw DOM
+                // Basic HTML escape
+                const escapeHtml = (unsafe) => {
+                    return unsafe
+                         .replace(/&/g, "&amp;")
+                         .replace(/</g, "&lt;")
+                         .replace(/>/g, "&gt;")
+                         .replace(/"/g, "&quot;")
+                         .replace(/'/g, "&#039;");
+                 }
+                document.getElementById('raw-dom-content').innerHTML = escapeHtml(data.html_excerpt);
+                
+                // Set badges
+                document.getElementById('tables-found-badge').textContent = `${data.valid_tables} Tables Valid`;
+                
+                if(data.saved_source) {
+                    const badge = document.getElementById('saved-source-badge');
+                    badge.classList.remove('hidden');
+                    badge.textContent = `Saved as: ${data.saved_source}`;
+                    updateSourcesCount(); // from app.js
+                }
+                
+                // Render Table
+                const thead = document.getElementById('scrape-thead');
+                const tbody = document.getElementById('scrape-tbody');
+                
+                if(data.preview_cols.length > 0) {
+                    let theadHtml = '<tr>';
+                    data.preview_cols.forEach(col => {
+                        theadHtml += `<th class="px-6 py-3 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">${col}</th>`;
+                    });
+                    theadHtml += '</tr>';
+                    thead.innerHTML = theadHtml;
+                    
+                    let tbodyHtml = '';
+                    data.preview_data.forEach((row, i) => {
+                        const trClass = i % 2 === 0 ? "bg-surface-container" : "bg-surface-container-low";
+                        tbodyHtml += `<tr class="${trClass} hover:bg-surface-variant/30">`;
+                        data.preview_cols.forEach(col => {
+                            tbodyHtml += `<td class="px-6 py-3 border-r border-outline-variant/30 last:border-0">${row[col] !== null ? row[col] : ''}</td>`;
+                        });
+                        tbodyHtml += '</tr>';
+                    });
+                    tbody.innerHTML = tbodyHtml;
+                } else {
+                    thead.innerHTML = '';
+                    tbody.innerHTML = '<tr><td class="p-6 text-center text-on-surface-variant">No se encontraron datos estructurados.</td></tr>';
+                }
+                
+                showToast("Scraping completado", "success");
+            } else {
+                showToast(data.detail || "Error al scrapear", "error");
+            }
+            
+        } catch(e) {
+            console.error(e);
+            document.getElementById('scrape-loading').classList.add('hidden');
+            showToast("Error de conexión", "error");
+        }
+    }
+</script>
+{% endblock %}

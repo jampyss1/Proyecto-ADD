@@ -12,33 +12,10 @@ Clases:
 
 import pandas as pd
 import requests
-import sqlite3
+import psycopg2
 
 
 class CargadorDatos:
-    """
-    Carga datos desde un archivo local o una URL de API.
-
-    Parameters
-    ----------
-    url_base : str, optional
-        URL base de la API. Por defecto cadena vacía.
-    tiempo_espera : int, optional
-        Tiempo límite de conexión HTTP en segundos. Por defecto 10.
-
-    Attributes
-    ----------
-    url_base : str
-        URL base de la API configurada.
-    datos_crudos : dict
-        Último conjunto de datos cargados en formato dict.
-
-    Examples
-    --------
-    >>> cargador = CargadorDatos()
-    >>> df = cargador.cargar_desde_url("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY")
-    >>> print(df.shape)
-    """
 
     def __init__(self, url_base: str = "", tiempo_espera: int = 10):
         self.url_base = url_base
@@ -48,25 +25,7 @@ class CargadorDatos:
 
 
     def cargar_desde_archivo(self, archivo) -> pd.DataFrame:
-        """
-        Carga datos desde un objeto archivo subido (CSV o JSON).
 
-        Detecta la extensión del archivo y delega a _leer_csv o _leer_json.
-
-        Parameters
-        ----------
-        archivo : UploadedFile
-            Objeto de archivo retornado por st.file_uploader.
-
-        Returns
-        -------
-        pd.DataFrame
-
-        Raises
-        ------
-        ValueError
-            Si la extensión del archivo no es .csv, .tsv ni .json.
-        """
         nombre = archivo.name.lower()
         if nombre.endswith(".csv"):
             return self._leer_csv(archivo)
@@ -78,29 +37,7 @@ class CargadorDatos:
             raise ValueError(f"Formato no soportado: '{archivo.name}'. Use .csv, .tsv o .json.")
 
     def cargar_desde_ruta(self, ruta: str) -> pd.DataFrame:
-        """
-        Carga datos desde una ruta de archivo en disco (CSV o JSON).
 
-        A diferencia de cargar_desde_archivo(), este método acepta una
-        ruta de archivo como cadena de texto, sin necesidad de un objeto
-        UploadedFile de Streamlit.
-
-        Parameters
-        ----------
-        ruta : str
-            Ruta al archivo CSV o JSON.
-
-        Returns
-        -------
-        pd.DataFrame
-
-        Raises
-        ------
-        FileNotFoundError
-            Si el archivo no existe.
-        ValueError
-            Si la extensión no es .csv, .tsv ni .json.
-        """
         import os
         if not os.path.isfile(ruta):
             raise FileNotFoundError(f"No se encontró el archivo: '{ruta}'")
@@ -128,25 +65,7 @@ class CargadorDatos:
             raise ValueError(f"Formato no soportado: '{ruta}'. Use .csv, .tsv o .json.")
 
     def cargar_desde_url(self, url: str) -> pd.DataFrame:
-        """
-        Carga datos haciendo GET a una URL y normaliza la respuesta JSON.
 
-        Parameters
-        ----------
-        url : str
-            URL del endpoint de API que retorna JSON.
-
-        Returns
-        -------
-        pd.DataFrame
-
-        Raises
-        ------
-        ConnectionError
-            Si no se puede conectar con la URL.
-        ValueError
-            Si la respuesta no es JSON válido o la estructura no es soportada.
-        """
         try:
             respuesta = requests.get(url, timeout=self.tiempo_espera)
         except requests.exceptions.ConnectionError as e:
@@ -212,66 +131,80 @@ class CargadorDatos:
         return df.to_dict(orient="records")
 
 
-    # ── Conexión a base de datos SQL ──────────────────────────────────
+    def _conectar_postgres(self, config: dict):
+        return psycopg2.connect(
+            host=config.get("host", "localhost"),
+            port=config.get("port", 5432),
+            database=config["database"],
+            user=config["user"],
+            password=config.get("password", "")
+        )
 
-    def listar_tablas_sql(self, ruta_db: str) -> list:
-        """
-        Lista las tablas disponibles en una base de datos SQLite.
-
-        Parameters
-        ----------
-        ruta_db : str
-            Ruta al archivo .db / .sqlite.
-
-        Returns
-        -------
-        list
-            Lista de nombres de tablas.
-        """
-        conn = sqlite3.connect(ruta_db)
+    def listar_tablas_sql(self, config: dict) -> list:
+        conn = self._conectar_postgres(config)
         cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        cursor.execute(
+            "SELECT table_name FROM information_schema.tables "
+            "WHERE table_schema = 'public' ORDER BY table_name;"
+        )
         tablas = [fila[0] for fila in cursor.fetchall()]
+        cursor.close()
         conn.close()
         return tablas
 
-    def cargar_desde_sql(self, ruta_db: str, tabla: str) -> pd.DataFrame:
-        """
-        Carga una tabla completa desde una base de datos SQLite.
-
-        Parameters
-        ----------
-        ruta_db : str
-            Ruta al archivo .db / .sqlite.
-        tabla : str
-            Nombre de la tabla a cargar.
-
-        Returns
-        -------
-        pd.DataFrame
-
-        Raises
-        ------
-        FileNotFoundError
-            Si el archivo de base de datos no existe.
-        ValueError
-            Si la tabla no existe en la base de datos.
-        """
-        import os
-        if not os.path.isfile(ruta_db):
-            raise FileNotFoundError(f"No se encontró la base de datos: '{ruta_db}'")
-
-        tablas_disponibles = self.listar_tablas_sql(ruta_db)
+    def cargar_desde_sql(self, config: dict, tabla: str) -> pd.DataFrame:
+        tablas_disponibles = self.listar_tablas_sql(config)
         if tabla not in tablas_disponibles:
             raise ValueError(
                 f"La tabla '{tabla}' no existe. "
                 f"Tablas disponibles: {tablas_disponibles}"
             )
-
-        conn = sqlite3.connect(ruta_db)
-        df = pd.read_sql_query(f"SELECT * FROM [{tabla}]", conn)
+        conn = self._conectar_postgres(config)
+        df = pd.read_sql_query(f'SELECT * FROM "{tabla}"', conn)
         conn.close()
         return df
+
+    def obtener_esquema_tabla(self, config: dict, tabla: str) -> list:
+        conn = self._conectar_postgres(config)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT column_name, data_type, is_nullable, column_default "
+            "FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = %s "
+            "ORDER BY ordinal_position;",
+            (tabla,)
+        )
+        columnas = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return columnas
+
+    def obtener_primary_keys(self, config: dict, tabla: str) -> list:
+        conn = self._conectar_postgres(config)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT kcu.column_name "
+            "FROM information_schema.table_constraints tc "
+            "JOIN information_schema.key_column_usage kcu "
+            "ON tc.constraint_name = kcu.constraint_name "
+            "WHERE tc.table_schema = 'public' "
+            "AND tc.table_name = %s "
+            "AND tc.constraint_type = 'PRIMARY KEY';",
+            (tabla,)
+        )
+        pks = [fila[0] for fila in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+        return pks
+
+    def contar_registros(self, config: dict, tabla: str) -> int:
+        conn = self._conectar_postgres(config)
+        cursor = conn.cursor()
+        cursor.execute(f'SELECT COUNT(*) FROM "{tabla}"')
+        total = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+        return total
 
     # ── Lectores internos ────────────────────────────────────────────
 
@@ -299,14 +232,6 @@ class CargadorDatos:
             raise ValueError("El JSON debe ser una lista de objetos o un objeto único.")
 
     def _manejar_error(self, respuesta) -> None:
-        """
-        Valida el código HTTP y lanza excepciones descriptivas.
-
-        Parameters
-        ----------
-        respuesta : requests.Response
-            Respuesta HTTP a validar.
-        """
         if respuesta.status_code == 404:
             raise ConnectionError(f"Recurso no encontrado (404): {respuesta.url}")
         elif respuesta.status_code == 401:
@@ -321,3 +246,185 @@ class CargadorDatos:
             raise ConnectionError(
                 f"Error HTTP {respuesta.status_code}: {respuesta.url}"
             )
+
+
+class SimuladorNoSQL:
+
+    def __init__(self):
+        self._colecciones = {}
+        self._generar_datos()
+
+    def _generar_datos(self):
+        self._colecciones["estudiantes"] = [
+            {"_id": 1, "nombre": "Carlos Mendoza", "edad": 21, "carrera": "Ingeniería en Sistemas",
+             "contacto": {"email": "carlos.mendoza@uni.mx", "telefono": "3312345601"},
+             "direccion": {"ciudad": "Guadalajara", "estado": "Jalisco"}},
+            {"_id": 2, "nombre": "María López", "edad": 22, "carrera": "Ciencia de Datos",
+             "contacto": {"email": "maria.lopez@uni.mx", "telefono": "3312345602"},
+             "direccion": {"ciudad": "Zapopan", "estado": "Jalisco"}},
+            {"_id": 3, "nombre": "Jorge Ramírez", "edad": 20, "carrera": "Telemática",
+             "contacto": {"email": "jorge.ramirez@uni.mx", "telefono": "3312345603"},
+             "direccion": {"ciudad": "Tlaquepaque", "estado": "Jalisco"}},
+            {"_id": 4, "nombre": "Ana Torres", "edad": 23, "carrera": "Inteligencia Artificial",
+             "contacto": {"email": "ana.torres@uni.mx", "telefono": "3312345604"},
+             "direccion": {"ciudad": "Tonalá", "estado": "Jalisco"}},
+            {"_id": 5, "nombre": "Luis García", "edad": 21, "carrera": "Ingeniería en Sistemas",
+             "contacto": {"email": "luis.garcia@uni.mx", "telefono": "3312345605"},
+             "direccion": {"ciudad": "Monterrey", "estado": "Nuevo León"}},
+            {"_id": 6, "nombre": "Sofía Hernández", "edad": 19, "carrera": "Ciencia de Datos",
+             "contacto": {"email": "sofia.hdz@uni.mx", "telefono": "3312345606"},
+             "direccion": {"ciudad": "CDMX", "estado": "Ciudad de México"}},
+            {"_id": 7, "nombre": "Diego Martínez", "edad": 24, "carrera": "Telemática",
+             "contacto": {"email": "diego.mtz@uni.mx", "telefono": "3312345607"},
+             "direccion": {"ciudad": "Puebla", "estado": "Puebla"}},
+            {"_id": 8, "nombre": "Valentina Cruz", "edad": 20, "carrera": "Inteligencia Artificial",
+             "contacto": {"email": "vale.cruz@uni.mx", "telefono": "3312345608"},
+             "direccion": {"ciudad": "Querétaro", "estado": "Querétaro"}},
+            {"_id": 9, "nombre": "Fernando Díaz", "edad": 22, "carrera": "Ingeniería en Sistemas",
+             "contacto": {"email": "fer.diaz@uni.mx", "telefono": "3312345609"},
+             "direccion": {"ciudad": "León", "estado": "Guanajuato"}},
+            {"_id": 10, "nombre": "Camila Ruiz", "edad": 21, "carrera": "Ciencia de Datos",
+             "contacto": {"email": "camila.ruiz@uni.mx", "telefono": "3312345610"},
+             "direccion": {"ciudad": "Mérida", "estado": "Yucatán"}},
+            {"_id": 11, "nombre": "Andrés Vega", "edad": 23, "carrera": "Telemática",
+             "contacto": {"email": "andres.vega@uni.mx", "telefono": "3312345611"},
+             "direccion": {"ciudad": "Guadalajara", "estado": "Jalisco"}},
+            {"_id": 12, "nombre": "Isabella Morales", "edad": 20, "carrera": "Inteligencia Artificial",
+             "contacto": {"email": "isa.morales@uni.mx", "telefono": "3312345612"},
+             "direccion": {"ciudad": "Zapopan", "estado": "Jalisco"}},
+        ]
+
+        self._colecciones["cursos"] = [
+            {"_id": 101, "nombre": "Bases de Datos Avanzadas", "creditos": 8, "profesor": "Dr. Pérez",
+             "horario": {"dias": ["Lunes", "Miércoles"], "hora_inicio": "08:00", "hora_fin": "10:00"},
+             "prerequisitos": ["Bases de Datos", "Programación"]},
+            {"_id": 102, "nombre": "Machine Learning", "creditos": 9, "profesor": "Dra. Sánchez",
+             "horario": {"dias": ["Martes", "Jueves"], "hora_inicio": "10:00", "hora_fin": "12:00"},
+             "prerequisitos": ["Estadística", "Álgebra Lineal"]},
+            {"_id": 103, "nombre": "Redes de Computadoras", "creditos": 7, "profesor": "Mtro. López",
+             "horario": {"dias": ["Lunes", "Viernes"], "hora_inicio": "14:00", "hora_fin": "16:00"},
+             "prerequisitos": ["Sistemas Operativos"]},
+            {"_id": 104, "nombre": "Inteligencia Artificial", "creditos": 9, "profesor": "Dr. Rodríguez",
+             "horario": {"dias": ["Miércoles", "Viernes"], "hora_inicio": "08:00", "hora_fin": "10:00"},
+             "prerequisitos": ["Programación", "Estadística"]},
+            {"_id": 105, "nombre": "Cálculo Multivariable", "creditos": 8, "profesor": "Dra. Gutiérrez",
+             "horario": {"dias": ["Lunes", "Miércoles", "Viernes"], "hora_inicio": "12:00", "hora_fin": "13:00"},
+             "prerequisitos": ["Cálculo Integral"]},
+            {"_id": 106, "nombre": "Desarrollo Web", "creditos": 6, "profesor": "Mtro. Flores",
+             "horario": {"dias": ["Martes", "Jueves"], "hora_inicio": "16:00", "hora_fin": "18:00"},
+             "prerequisitos": ["Programación"]},
+            {"_id": 107, "nombre": "Seguridad Informática", "creditos": 7, "profesor": "Dr. Navarro",
+             "horario": {"dias": ["Lunes", "Jueves"], "hora_inicio": "10:00", "hora_fin": "12:00"},
+             "prerequisitos": ["Redes de Computadoras"]},
+            {"_id": 108, "nombre": "Procesamiento de Lenguaje Natural", "creditos": 8, "profesor": "Dra. Castro",
+             "horario": {"dias": ["Martes", "Viernes"], "hora_inicio": "08:00", "hora_fin": "10:00"},
+             "prerequisitos": ["Machine Learning"]},
+            {"_id": 109, "nombre": "Big Data", "creditos": 9, "profesor": "Dr. Ramírez",
+             "horario": {"dias": ["Miércoles", "Viernes"], "hora_inicio": "14:00", "hora_fin": "16:00"},
+             "prerequisitos": ["Bases de Datos Avanzadas"]},
+            {"_id": 110, "nombre": "Visión Computacional", "creditos": 8, "profesor": "Dra. Herrera",
+             "horario": {"dias": ["Lunes", "Miércoles"], "hora_inicio": "16:00", "hora_fin": "18:00"},
+             "prerequisitos": ["Machine Learning", "Álgebra Lineal"]},
+        ]
+
+        self._colecciones["inscripciones"] = [
+            {"_id": 1001, "estudiante_id": 1, "curso_id": 101, "semestre": "2025-A", "calificacion": 92,
+             "asistencia": {"total_clases": 30, "asistidas": 28}},
+            {"_id": 1002, "estudiante_id": 2, "curso_id": 102, "semestre": "2025-A", "calificacion": 88,
+             "asistencia": {"total_clases": 30, "asistidas": 27}},
+            {"_id": 1003, "estudiante_id": 3, "curso_id": 103, "semestre": "2025-A", "calificacion": 75,
+             "asistencia": {"total_clases": 30, "asistidas": 22}},
+            {"_id": 1004, "estudiante_id": 4, "curso_id": 104, "semestre": "2025-A", "calificacion": 95,
+             "asistencia": {"total_clases": 30, "asistidas": 30}},
+            {"_id": 1005, "estudiante_id": 5, "curso_id": 105, "semestre": "2025-A", "calificacion": 68,
+             "asistencia": {"total_clases": 30, "asistidas": 20}},
+            {"_id": 1006, "estudiante_id": 6, "curso_id": 106, "semestre": "2025-A", "calificacion": 91,
+             "asistencia": {"total_clases": 30, "asistidas": 29}},
+            {"_id": 1007, "estudiante_id": 7, "curso_id": 107, "semestre": "2025-A", "calificacion": 83,
+             "asistencia": {"total_clases": 30, "asistidas": 25}},
+            {"_id": 1008, "estudiante_id": 8, "curso_id": 108, "semestre": "2025-B", "calificacion": 97,
+             "asistencia": {"total_clases": 30, "asistidas": 30}},
+            {"_id": 1009, "estudiante_id": 9, "curso_id": 109, "semestre": "2025-B", "calificacion": 72,
+             "asistencia": {"total_clases": 30, "asistidas": 21}},
+            {"_id": 1010, "estudiante_id": 10, "curso_id": 110, "semestre": "2025-B", "calificacion": 86,
+             "asistencia": {"total_clases": 30, "asistidas": 26}},
+            {"_id": 1011, "estudiante_id": 11, "curso_id": 101, "semestre": "2025-B", "calificacion": 79,
+             "asistencia": {"total_clases": 30, "asistidas": 24}},
+            {"_id": 1012, "estudiante_id": 12, "curso_id": 102, "semestre": "2025-B", "calificacion": 94,
+             "asistencia": {"total_clases": 30, "asistidas": 29}},
+            {"_id": 1013, "estudiante_id": 1, "curso_id": 104, "semestre": "2025-B", "calificacion": 90,
+             "asistencia": {"total_clases": 30, "asistidas": 28}},
+            {"_id": 1014, "estudiante_id": 3, "curso_id": 106, "semestre": "2025-B", "calificacion": 85,
+             "asistencia": {"total_clases": 30, "asistidas": 26}},
+            {"_id": 1015, "estudiante_id": 5, "curso_id": 102, "semestre": "2025-B", "calificacion": 77,
+             "asistencia": {"total_clases": 30, "asistidas": 23}},
+        ]
+
+    def obtener_colecciones(self) -> dict:
+        return self._colecciones
+
+    def obtener_nombres_colecciones(self) -> list:
+        return list(self._colecciones.keys())
+
+    def coleccion_a_dataframe(self, nombre: str) -> pd.DataFrame:
+        if nombre not in self._colecciones:
+            raise ValueError(f"La colección '{nombre}' no existe.")
+        return pd.json_normalize(self._colecciones[nombre])
+
+    def resumen(self) -> dict:
+        resultado = {}
+        for nombre, documentos in self._colecciones.items():
+            resultado[nombre] = {
+                "total_documentos": len(documentos),
+                "campos": list(documentos[0].keys()) if documentos else [],
+            }
+        return resultado
+
+
+class WebScraper:
+
+    def __init__(self, url: str = ""):
+        self._url = url
+        self._html_crudo = ""
+        self._tablas = []
+
+    def establecer_url(self, url: str):
+        self._url = url
+
+    def obtener_html(self) -> str:
+        if not self._url:
+            raise ValueError("No se ha establecido una URL.")
+        respuesta = requests.get(self._url, timeout=15, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        })
+        if not respuesta.ok:
+            raise ConnectionError(f"Error HTTP {respuesta.status_code}: {self._url}")
+        self._html_crudo = respuesta.text
+        return self._html_crudo
+
+    def obtener_extracto_html(self, caracteres: int = 1500) -> str:
+        if not self._html_crudo:
+            self.obtener_html()
+        return self._html_crudo[:caracteres]
+
+    def extraer_tablas(self) -> list:
+        if not self._html_crudo:
+            self.obtener_html()
+        try:
+            import io
+            self._tablas = pd.read_html(io.StringIO(self._html_crudo))
+        except ValueError:
+            self._tablas = []
+        return self._tablas
+
+    def obtener_tabla(self, indice: int = 0) -> pd.DataFrame:
+        if not self._tablas:
+            self.extraer_tablas()
+        if indice < 0 or indice >= len(self._tablas):
+            raise IndexError(f"Índice {indice} fuera de rango. Se encontraron {len(self._tablas)} tablas.")
+        return self._tablas[indice]
+
+    def total_tablas(self) -> int:
+        if not self._tablas:
+            self.extraer_tablas()
+        return len(self._tablas)
